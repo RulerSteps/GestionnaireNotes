@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BibliothequeApp"
+rootProject.name = "GestionnaireDeNotes"
 include(":app")
  

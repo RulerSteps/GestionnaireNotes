@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.bibliothequeapp"
+    namespace = "com.example.gestionnairenotes"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.bibliothequeapp"
+        applicationId = "com.example.gestionnairenotes"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -36,12 +36,14 @@ android {
 }
 
 dependencies {
+    // Room
+    implementation ("androidx.room:room-runtime:2.6.1")
+    annotationProcessor ("androidx.room:room-compiler:2.6.1")
+
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
     implementation(libs.material)
-    implementation(libs.recyclerview)
-    implementation(libs.cardview)
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)

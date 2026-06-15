@@ -10,7 +10,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.BibliothequeApp">
+        android:theme="@style/Theme.GestionnaireDeNotes">
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -20,6 +20,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".CreateNoteActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EditNoteActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

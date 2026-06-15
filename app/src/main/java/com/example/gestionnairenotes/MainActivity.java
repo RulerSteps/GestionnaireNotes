@@ -6,9 +6,16 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.SearchView;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -31,11 +38,19 @@ public class MainActivity extends AppCompatActivity implements NoteAdapter.OnNot
 
     private boolean isFilterFavorites = false;
     private String currentQuery = "";
+    private String sortMode = "DATE_DESC";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
         repository = new NoteRepository(this);
 
@@ -64,6 +79,22 @@ public class MainActivity extends AppCompatActivity implements NoteAdapter.OnNot
         adapter = new NoteAdapter(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
+
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                Note note = adapter.getNotes().get(position);
+                repository.deleteNote(note);
+                Toast.makeText(MainActivity.this, "Note supprimée", Toast.LENGTH_SHORT).show();
+                loadNotes();
+            }
+        }).attachToRecyclerView(recyclerView);
     }
 
     private void setupListeners() {
@@ -92,6 +123,27 @@ public class MainActivity extends AppCompatActivity implements NoteAdapter.OnNot
                 return true;
             }
         });
+
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_theme) {
+                int currentMode = AppCompatDelegate.getDefaultNightMode();
+                if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                } else {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                }
+                return true;
+            } else if (item.getItemId() == R.id.sort_date_desc) {
+                sortMode = "DATE_DESC";
+                loadNotes();
+                return true;
+            } else if (item.getItemId() == R.id.sort_title_asc) {
+                sortMode = "TITLE_ASC";
+                loadNotes();
+                return true;
+            }
+            return false;
+        });
     }
 
     private void loadNotes() {
@@ -110,6 +162,12 @@ public class MainActivity extends AppCompatActivity implements NoteAdapter.OnNot
             } else {
                 notes = repository.rechercherParTitre(currentQuery);
             }
+        }
+
+        if (sortMode.equals("TITLE_ASC")) {
+            notes.sort((n1, n2) -> n1.getTitre().compareToIgnoreCase(n2.getTitre()));
+        } else {
+            notes.sort((n1, n2) -> Integer.compare(n2.getId(), n1.getId()));
         }
 
         adapter.setNotes(notes);
