@@ -65,7 +65,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         private final TextView tvNoteTitle;
         private final TextView tvNoteDate;
         private final ImageView ivFavorite;
-        private final ImageView ivShare;
         private final ConstraintLayout cardLayout;
 
         private boolean isClickPending = false;
@@ -76,7 +75,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             tvNoteTitle = itemView.findViewById(R.id.tvNoteTitle);
             tvNoteDate = itemView.findViewById(R.id.tvNoteDate);
             ivFavorite = itemView.findViewById(R.id.ivFavorite);
-            ivShare = itemView.findViewById(R.id.ivShare);
             cardLayout = itemView.findViewById(R.id.cardLayout);
         }
 
@@ -119,15 +117,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 return true;
             });
 
-            ivShare.setOnClickListener(v -> {
-                android.content.Intent sendIntent = new android.content.Intent();
-                sendIntent.setAction(android.content.Intent.ACTION_SEND);
-                sendIntent.putExtra(android.content.Intent.EXTRA_TEXT, note.getTitre() + "\n\n" + note.getContenu());
-                sendIntent.setType("text/plain");
-
-                android.content.Intent shareIntent = android.content.Intent.createChooser(sendIntent, "Partager la note via");
-                itemView.getContext().startActivity(shareIntent);
-            });
         }
     }
 }
