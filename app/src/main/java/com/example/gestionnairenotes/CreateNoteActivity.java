@@ -1,100 +1,99 @@
 package com.example.gestionnairenotes;
 
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.gestionnairenotes.model.Note;
 import com.example.gestionnairenotes.repository.NoteRepository;
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CreateNoteActivity extends AppCompatActivity {
 
-    private EditText etTitre;
-    private EditText etContenu;
-    private FloatingActionButton fabSave;
-    private MaterialToolbar toolbar;
+    private EditText editTitre;
+    private EditText editContenu;
+    private Button btnCreer;
+    private View scrollNote;
+
+    private String couleurNote;
     private NoteRepository repository;
 
-    private String selectedColor = "#FFFFFF"; // Default white
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_create_note);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainLayout), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        editTitre   = findViewById(R.id.editTitre);
+        editContenu = findViewById(R.id.editContenu);
+        btnCreer    = findViewById(R.id.btnCreer);
+        scrollNote  = findViewById(R.id.scrollNote);
 
         repository = new NoteRepository(this);
 
-        // Receive color from Intent
-        if (getIntent().hasExtra("note_color")) {
-            selectedColor = getIntent().getStringExtra("note_color");
+        couleurNote = getIntent().getStringExtra("note_color");
+        if (couleurNote == null) {
+            couleurNote = "#219653";
         }
 
-        initViews();
-        setupToolbar();
-        applyColor();
+        appliquerCouleurFond(couleurNote);
 
-        fabSave.setOnClickListener(v -> saveNote());
+        btnCreer.setOnClickListener(v -> enregistrerNote());
     }
 
-    private void initViews() {
-        toolbar = findViewById(R.id.toolbar);
-        etTitre = findViewById(R.id.etTitre);
-        etContenu = findViewById(R.id.etContenu);
-        fabSave = findViewById(R.id.fabSave);
+    private void appliquerCouleurFond(String couleurHex) {
+        GradientDrawable fond = new GradientDrawable();
+        fond.setShape(GradientDrawable.RECTANGLE);
+        fond.setCornerRadius(16 * getResources().getDisplayMetrics().density);
+        fond.setColor(Color.parseColor(couleurHex));
+        scrollNote.setBackground(fond);
     }
 
-    private void setupToolbar() {
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowHomeEnabled(true);
+    private void enregistrerNote() {
+        String titre   = editTitre.getText().toString().trim();
+        String contenu = editContenu.getText().toString().trim();
+
+        if (TextUtils.isEmpty(titre)) {
+            editTitre.setError("Le titre est obligatoire");
+            editTitre.requestFocus();
+            return;
         }
-        toolbar.setNavigationOnClickListener(v -> finish());
-    }
-
-    private void applyColor() {
-        try {
-            findViewById(R.id.mainLayout).setBackgroundColor(Color.parseColor(selectedColor));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void saveNote() {
-        String titre = etTitre.getText().toString().trim();
-        String contenu = etContenu.getText().toString().trim();
-
-        if (titre.isEmpty() || contenu.isEmpty()) {
-            Toast.makeText(this, "Le titre et le contenu ne peuvent pas être vides", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(contenu)) {
+            editContenu.setError("Le contenu est obligatoire");
+            editContenu.requestFocus();
             return;
         }
 
-        String currentDate = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(new Date());
+        String date = new SimpleDateFormat("dd MMMM yyyy", Locale.FRENCH).format(new Date());
+        date = date.substring(0, 1).toUpperCase() + date.substring(1);
 
-        Note note = new Note(titre, contenu, selectedColor, false, currentDate);
-        repository.insertNote(note);
+        Note note = new Note(titre, contenu, couleurNote, false, date);
 
-        Toast.makeText(this, "Note créée", Toast.LENGTH_SHORT).show();
-        finish();
+        executor.execute(() -> {
+            repository.insertNote(note);
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Note créée", Toast.LENGTH_SHORT).show();
+                finish();
+            });
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
     }
 }
