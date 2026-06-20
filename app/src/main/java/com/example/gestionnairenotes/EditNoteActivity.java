@@ -51,6 +51,16 @@ public class EditNoteActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "Erreur de chargement de la note", Toast.LENGTH_SHORT).show();
             finish();
+            return;
+        }
+
+        // CORRECTIF : si l'ID était valide mais qu'aucune note correspondante n'a été
+        // trouvée en base (ex: note supprimée entre-temps), on arrête ici plutôt que
+        // de laisser l'utilisateur "sauvegarder" une note qui n'existe pas.
+        if (currentNote == null) {
+            Toast.makeText(this, "Cette note est introuvable", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
         setupColorPickers();
@@ -72,7 +82,10 @@ public class EditNoteActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
         toolbar.setNavigationOnClickListener(v -> finish());
-        
+
+        // Sans cet appel, le menu (action_share) n'apparaît jamais dans la toolbar
+        toolbar.inflateMenu(R.menu.menu_edit);
+
         toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_share) {
                 shareNote();
@@ -84,7 +97,7 @@ public class EditNoteActivity extends AppCompatActivity {
 
     private void shareNote() {
         if (currentNote == null) return;
-        
+
         String shareText = currentNote.getTitre() + "\n\n" + currentNote.getContenu();
         Intent sendIntent = new Intent();
         sendIntent.setAction(Intent.ACTION_SEND);
@@ -96,7 +109,6 @@ public class EditNoteActivity extends AppCompatActivity {
     }
 
     private void loadNoteData(int id) {
-        // Find note
         for (Note note : repository.getAllNotes()) {
             if (note.getId() == id) {
                 currentNote = note;
@@ -110,6 +122,8 @@ public class EditNoteActivity extends AppCompatActivity {
             selectedColor = currentNote.getCouleur();
             applyColor();
         }
+        // Si currentNote reste null ici, c'est géré juste après l'appel
+        // dans onCreate() (voir CORRECTIF plus haut).
     }
 
     private void setupColorPickers() {
@@ -143,13 +157,11 @@ public class EditNoteActivity extends AppCompatActivity {
             return;
         }
 
-        if (currentNote != null) {
-            currentNote.setTitre(titre);
-            currentNote.setContenu(contenu);
-            currentNote.setCouleur(selectedColor);
-            repository.updateNote(currentNote);
-            Toast.makeText(this, "Note modifiée", Toast.LENGTH_SHORT).show();
-        }
+        currentNote.setTitre(titre);
+        currentNote.setContenu(contenu);
+        currentNote.setCouleur(selectedColor);
+        repository.updateNote(currentNote);
+        Toast.makeText(this, "Note modifiée", Toast.LENGTH_SHORT).show();
 
         finish();
     }
